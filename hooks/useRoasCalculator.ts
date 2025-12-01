@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { CalculationInput, CalculationOutput, MarginMode, ProductCalculation } from '../types';
 
 const PPN_RATE = 0.11;
+const NO_LIMIT = 999999999;
 
 const getInitialState = (): CalculationInput => ({
   id: `prod_${Date.now()}`,
@@ -14,11 +15,17 @@ const getInitialState = (): CalculationInput => ({
   subsidiCampaignTokoPersen: 50,
   komisiPlatformPersen: 4,
   komisiDinamisPersen: 2.1,
+  maxKomisiDinamis: NO_LIMIT,
   cashbackBonusPersen: 0,
+  maxCashbackBonus: NO_LIMIT,
   biayaPemrosesan: 1000,
   afiliasiPersen: 0,
   komisiAfiliasiTokoPersen: 0,
   liveVoucherExtraPersen: 0,
+  biayaPreOrderPersen: 0,
+  maxBiayaPreOrder: NO_LIMIT,
+  biayaLayananMallPersen: 0,
+  maxBiayaLayananMall: NO_LIMIT,
   biayaOperasionalValue: 5,
   biayaOperasionalMode: MarginMode.PERCENT,
   targetPersentaseKeuntungan: 20,
@@ -36,9 +43,10 @@ export const useRoasCalculator = (initialData?: ProductCalculation) => {
   const calculations = useMemo<CalculationOutput>(() => {
     const { 
       hpp, marginProfitValue, marginProfitMode, diskonToko, potonganCampaignPersen, subsidiCampaignTokoPersen,
-      komisiPlatformPersen, komisiDinamisPersen, cashbackBonusPersen, biayaPemrosesan, afiliasiPersen,
-      komisiAfiliasiTokoPersen, liveVoucherExtraPersen, biayaOperasionalValue, biayaOperasionalMode,
-      targetPersentaseKeuntungan, inputRoiAktual, biayaIklanPerPesanan
+      komisiPlatformPersen, komisiDinamisPersen, maxKomisiDinamis, cashbackBonusPersen, maxCashbackBonus,
+      biayaPemrosesan, afiliasiPersen, komisiAfiliasiTokoPersen, liveVoucherExtraPersen,
+      biayaPreOrderPersen, maxBiayaPreOrder, biayaLayananMallPersen, maxBiayaLayananMall,
+      biayaOperasionalValue, biayaOperasionalMode, targetPersentaseKeuntungan, inputRoiAktual, biayaIklanPerPesanan
     } = inputs;
 
     // Harga Jual = HPP * (1 + Margin %)
@@ -58,8 +66,13 @@ export const useRoasCalculator = (initialData?: ProductCalculation) => {
     // Basis Komisi = Harga Jual - Total Potongan Campaign
     const basisKomisi = hargaJual - potonganCampaignRp;
     const komisiPlatformRp = basisKomisi * (komisiPlatformPersen / 100);
-    const komisiDinamisRp = basisKomisi * (komisiDinamisPersen / 100);
-    const cashbackBonusRp = basisKomisi * (cashbackBonusPersen / 100);
+    
+    // Biaya dengan batas maksimal
+    const komisiDinamisRp = Math.min(basisKomisi * (komisiDinamisPersen / 100), maxKomisiDinamis);
+    const cashbackBonusRp = Math.min(basisKomisi * (cashbackBonusPersen / 100), maxCashbackBonus);
+    const biayaPreOrderRp = Math.min(basisKomisi * (biayaPreOrderPersen / 100), maxBiayaPreOrder);
+    const biayaLayananMallRp = Math.min(basisKomisi * (biayaLayananMallPersen / 100), maxBiayaLayananMall);
+
     const afiliasiRp = basisKomisi * (afiliasiPersen / 100);
     const komisiAfiliasiTokoRp = basisKomisi * (komisiAfiliasiTokoPersen / 100);
     const liveVoucherExtraRp = basisKomisi * (liveVoucherExtraPersen / 100);
@@ -67,7 +80,7 @@ export const useRoasCalculator = (initialData?: ProductCalculation) => {
       ? totalPenghasilanSeller * (biayaOperasionalValue / 100)
       : biayaOperasionalValue;
     
-    const totalBiayaMarketplace = komisiPlatformRp + komisiDinamisRp + cashbackBonusRp + biayaPemrosesan + afiliasiRp + komisiAfiliasiTokoRp + liveVoucherExtraRp + biayaOperasionalRp;
+    const totalBiayaMarketplace = komisiPlatformRp + komisiDinamisRp + cashbackBonusRp + biayaPemrosesan + afiliasiRp + komisiAfiliasiTokoRp + liveVoucherExtraRp + biayaPreOrderRp + biayaLayananMallRp + biayaOperasionalRp;
     
     // Total Penyelesaian Pembayaran = Total Penghasilan Seller - Total Biaya Marketplace
     const totalPenyelesaianPembayaran = totalPenghasilanSeller - totalBiayaMarketplace;
@@ -94,7 +107,7 @@ export const useRoasCalculator = (initialData?: ProductCalculation) => {
     return {
       hargaJual, potonganCampaignRp, subsidiCampaignTokoRp, subsidiCampaignTikTokPersen, subsidiCampaignTikTokRp,
       hargaFinalEtalase, totalPenghasilanSeller, basisKomisi, komisiPlatformRp, komisiDinamisRp, cashbackBonusRp,
-      afiliasiRp, komisiAfiliasiTokoRp, liveVoucherExtraRp, biayaOperasionalRp, totalBiayaMarketplace,
+      afiliasiRp, komisiAfiliasiTokoRp, liveVoucherExtraRp, biayaPreOrderRp, biayaLayananMallRp, biayaOperasionalRp, totalBiayaMarketplace,
       totalPenyelesaianPembayaran, targetKeuntunganRp, potensiKeuntungan, targetRoiIdeal, budgetIklanIdeal,
       roiBep, budgetIklanMaksimal, biayaIklanAktual, potensiProfitPerOrder, persentaseKeuntunganAktual,
       biayaIklanDenganPpn, finalProfit
@@ -109,8 +122,12 @@ export const useRoasCalculator = (initialData?: ProductCalculation) => {
   }, []);
   
   const loadProductData = useCallback((product: ProductCalculation) => {
-    const { id, namaProduk, hpp, marginProfitValue, marginProfitMode, diskonToko, potonganCampaignPersen, subsidiCampaignTokoPersen, komisiPlatformPersen, komisiDinamisPersen, cashbackBonusPersen, biayaPemrosesan, afiliasiPersen, komisiAfiliasiTokoPersen, liveVoucherExtraPersen, biayaOperasionalValue, biayaOperasionalMode, targetPersentaseKeuntungan, inputRoiAktual, biayaIklanPerPesanan } = product;
-    setInputs({ id, namaProduk, hpp, marginProfitValue, marginProfitMode, diskonToko, potonganCampaignPersen, subsidiCampaignTokoPersen, komisiPlatformPersen, komisiDinamisPersen, cashbackBonusPersen, biayaPemrosesan, afiliasiPersen, komisiAfiliasiTokoPersen, liveVoucherExtraPersen, biayaOperasionalValue, biayaOperasionalMode, targetPersentaseKeuntungan, inputRoiAktual, biayaIklanPerPesanan });
+    // Ensure all fields from CalculationInput are present
+    const loadedInputs: CalculationInput = {
+      ...getInitialState(), // Start with defaults to handle older data structures
+      ...product
+    };
+    setInputs(loadedInputs);
   }, []);
 
   const fullProductData = useMemo<ProductCalculation>(() => ({

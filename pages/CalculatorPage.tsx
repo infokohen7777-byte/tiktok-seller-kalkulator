@@ -10,14 +10,21 @@ import MarginInput from '../components/calculator/MarginInput';
 import Button from '../components/ui/Button';
 import Toast from '../components/ui/Toast';
 import Input from '../components/ui/Input';
+import CappedInputRow from '../components/calculator/CappedInputRow';
 
 const CalculatorPage: React.FC = () => {
   const { inputs, calculations, setInputValue, resetCalculator, fullProductData } = useRoasCalculator();
   const [showToast, setShowToast] = useState(false);
 
   const handleNumericChange = (key: keyof typeof inputs, value: string) => {
-    setInputValue(key, value === '' ? 0 : parseFloat(value));
+    const numValue = value === '' || value === '-' ? 0 : parseFloat(value);
+    setInputValue(key, isNaN(numValue) ? 0 : numValue);
   };
+  
+  const handleMaxCapChange = (key: keyof typeof inputs, value: string) => {
+      const numValue = value === '' ? 999999999 : parseFloat(value);
+      setInputValue(key, isNaN(numValue) ? 999999999 : numValue);
+  }
 
   const handleSave = () => {
     if (!inputs.namaProduk) {
@@ -83,8 +90,38 @@ const CalculatorPage: React.FC = () => {
 
       <SectionCard title="Biaya-Biaya Marketplace" icon={<Receipt />}>
         <InputRow label="Komisi Platform" type="number" value={inputs.komisiPlatformPersen} onChange={e => handleNumericChange('komisiPlatformPersen', e.target.value)} unit="%" calculatedValue={formatRupiah(calculations.komisiPlatformRp)} />
-        <InputRow label="Komisi Dinamis" type="number" value={inputs.komisiDinamisPersen} onChange={e => handleNumericChange('komisiDinamisPersen', e.target.value)} unit="%" calculatedValue={formatRupiah(calculations.komisiDinamisRp)} />
-        <InputRow label="Cashback Bonus" type="number" value={inputs.cashbackBonusPersen} onChange={e => handleNumericChange('cashbackBonusPersen', e.target.value)} unit="%" calculatedValue={formatRupiah(calculations.cashbackBonusRp)} />
+        <CappedInputRow
+          label="Komisi Dinamis"
+          percentValue={inputs.komisiDinamisPersen}
+          onPercentChange={e => handleNumericChange('komisiDinamisPersen', e.target.value)}
+          capValue={inputs.maxKomisiDinamis}
+          onCapChange={e => handleMaxCapChange('maxKomisiDinamis', e.target.value)}
+          calculatedValue={formatRupiah(calculations.komisiDinamisRp)}
+        />
+        <CappedInputRow
+          label="Cashback Bonus"
+          percentValue={inputs.cashbackBonusPersen}
+          onPercentChange={e => handleNumericChange('cashbackBonusPersen', e.target.value)}
+          capValue={inputs.maxCashbackBonus}
+          onCapChange={e => handleMaxCapChange('maxCashbackBonus', e.target.value)}
+          calculatedValue={formatRupiah(calculations.cashbackBonusRp)}
+        />
+        <CappedInputRow
+          label="Biaya Pre Order"
+          percentValue={inputs.biayaPreOrderPersen}
+          onPercentChange={e => handleNumericChange('biayaPreOrderPersen', e.target.value)}
+          capValue={inputs.maxBiayaPreOrder}
+          onCapChange={e => handleMaxCapChange('maxBiayaPreOrder', e.target.value)}
+          calculatedValue={formatRupiah(calculations.biayaPreOrderRp)}
+        />
+        <CappedInputRow
+          label="Biaya Layanan Mall"
+          percentValue={inputs.biayaLayananMallPersen}
+          onPercentChange={e => handleNumericChange('biayaLayananMallPersen', e.target.value)}
+          capValue={inputs.maxBiayaLayananMall}
+          onCapChange={e => handleMaxCapChange('maxBiayaLayananMall', e.target.value)}
+          calculatedValue={formatRupiah(calculations.biayaLayananMallRp)}
+        />
         <InputRow label="Biaya Pemrosesan" type="number" value={inputs.biayaPemrosesan} onChange={e => handleNumericChange('biayaPemrosesan', e.target.value)} unit="Rp" />
         <InputRow label="Afiliasi" type="number" value={inputs.afiliasiPersen} onChange={e => handleNumericChange('afiliasiPersen', e.target.value)} unit="%" calculatedValue={formatRupiah(calculations.afiliasiRp)} />
         <InputRow label="Komisi Afiliasi Toko" type="number" value={inputs.komisiAfiliasiTokoPersen} onChange={e => handleNumericChange('komisiAfiliasiTokoPersen', e.target.value)} unit="%" calculatedValue={formatRupiah(calculations.komisiAfiliasiTokoRp)} />

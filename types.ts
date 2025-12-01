@@ -1,4 +1,3 @@
-
 export enum MarginMode {
   PERCENT = '%',
   RUPIAH = 'Rp',
@@ -15,11 +14,17 @@ export interface CalculationInput {
   subsidiCampaignTokoPersen: number;
   komisiPlatformPersen: number;
   komisiDinamisPersen: number;
+  maxKomisiDinamis: number;
   cashbackBonusPersen: number;
+  maxCashbackBonus: number;
   biayaPemrosesan: number;
   afiliasiPersen: number;
   komisiAfiliasiTokoPersen: number;
   liveVoucherExtraPersen: number;
+  biayaPreOrderPersen: number;
+  maxBiayaPreOrder: number;
+  biayaLayananMallPersen: number;
+  maxBiayaLayananMall: number;
   biayaOperasionalValue: number;
   biayaOperasionalMode: MarginMode;
   targetPersentaseKeuntungan: number;
@@ -42,6 +47,8 @@ export interface CalculationOutput {
   afiliasiRp: number;
   komisiAfiliasiTokoRp: number;
   liveVoucherExtraRp: number;
+  biayaPreOrderRp: number;
+  biayaLayananMallRp: number;
   biayaOperasionalRp: number;
   totalBiayaMarketplace: number;
   totalPenyelesaianPembayaran: number;

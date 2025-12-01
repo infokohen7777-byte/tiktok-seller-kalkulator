@@ -33,6 +33,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
         <h3 className="font-bold text-md text-slate-700 mb-2 border-b pb-1">Biaya-Biaya</h3>
         <DisplayRow label="Komisi Platform" value={`${product.komisiPlatformPersen}% (${formatRupiah(product.komisiPlatformRp)})`} />
         <DisplayRow label="Komisi Dinamis" value={`${product.komisiDinamisPersen}% (${formatRupiah(product.komisiDinamisRp)})`} />
+        <DisplayRow label="Cashback Bonus" value={`${product.cashbackBonusPersen}% (${formatRupiah(product.cashbackBonusRp)})`} />
+        <DisplayRow label="Biaya Pre Order" value={`${product.biayaPreOrderPersen || 0}% (${formatRupiah(product.biayaPreOrderRp || 0)})`} />
+        <DisplayRow label="Biaya Layanan Mall" value={`${product.biayaLayananMallPersen || 0}% (${formatRupiah(product.biayaLayananMallRp || 0)})`} />
         <DisplayRow label="Biaya Pemrosesan" value={formatRupiah(product.biayaPemrosesan)} />
         <DisplayRow label="Biaya Operasional" value={`${product.biayaOperasionalValue}${product.biayaOperasionalMode} (${formatRupiah(product.biayaOperasionalRp)})`} />
         <DisplayRow label="Total Biaya Marketplace" value={formatRupiah(product.totalBiayaMarketplace)} />
