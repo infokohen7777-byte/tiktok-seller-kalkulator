@@ -49,22 +49,27 @@ export const useRoasCalculator = (initialData?: ProductCalculation) => {
       biayaOperasionalValue, biayaOperasionalMode, targetPersentaseKeuntungan, inputRoiAktual, biayaIklanPerPesanan
     } = inputs;
 
-    // Harga Jual = HPP * (1 + Margin %)
-    const hargaJual = marginProfitMode === MarginMode.PERCENT
+    // Harga Jual Dasar (sebelum diskon apapun) menjadi basis perhitungan persentase
+    const hargaJualDasar = marginProfitMode === MarginMode.PERCENT
       ? hpp * (1 + (marginProfitValue / 100))
       : hpp + marginProfitValue;
 
-    const potonganCampaignRp = hargaJual * (potonganCampaignPersen / 100);
+    // Sesuai permintaan: harga jual adalah hpp ditambah margin profit dikurang diskon toko.
+    // Nilai ini yang akan ditampilkan di UI sebagai "Harga Jual".
+    const hargaJual = hargaJualDasar - diskonToko;
+
+    // Perhitungan campaign & komisi harus menggunakan harga sebelum diskon (hargaJualDasar)
+    const potonganCampaignRp = hargaJualDasar * (potonganCampaignPersen / 100);
     const subsidiCampaignTokoRp = potonganCampaignRp * (subsidiCampaignTokoPersen / 100);
     const subsidiCampaignTikTokRp = potonganCampaignRp - subsidiCampaignTokoRp;
-    const subsidiCampaignTikTokPersen = hargaJual > 0 ? (subsidiCampaignTikTokRp / hargaJual) * 100 : 0;
-    const hargaFinalEtalase = hargaJual - diskonToko - potonganCampaignRp;
+    const subsidiCampaignTikTokPersen = hargaJualDasar > 0 ? (subsidiCampaignTikTokRp / hargaJualDasar) * 100 : 0;
+    const hargaFinalEtalase = hargaJualDasar - diskonToko - potonganCampaignRp;
 
-    // Total Penghasilan Seller = Harga Jual - Diskon Toko - Potongan Campaign ditanggung Toko (subsidiCampaignTokoRp)
-    const totalPenghasilanSeller = hargaJual - diskonToko - subsidiCampaignTokoRp;
+    // Total Penghasilan Seller = Harga Jual Dasar - Diskon Toko - Potongan Campaign ditanggung Toko
+    const totalPenghasilanSeller = hargaJualDasar - diskonToko - subsidiCampaignTokoRp;
 
-    // Basis Komisi = Harga Jual - Total Potongan Campaign
-    const basisKomisi = hargaJual - potonganCampaignRp;
+    // Basis Komisi = Harga Jual Dasar - Total Potongan Campaign
+    const basisKomisi = hargaJualDasar - potonganCampaignRp;
     const komisiPlatformRp = basisKomisi * (komisiPlatformPersen / 100);
     
     // Biaya dengan batas maksimal
