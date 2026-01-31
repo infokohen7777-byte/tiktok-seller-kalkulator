@@ -3,9 +3,10 @@ import { Menu } from 'lucide-react';
 
 interface HeaderProps {
   onMenuClick: () => void;
+  onTitleClick: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+const Header: React.FC<HeaderProps> = ({ onMenuClick, onTitleClick }) => {
   return (
     <header className="bg-white shadow-md sticky top-0 z-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,9 +19,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             >
               <Menu size={24} />
             </button>
-            <h1 className="text-xl font-bold text-slate-800 ml-4">
+            <button onClick={onTitleClick} className="text-xl font-bold text-slate-800 ml-4 text-left">
               Kalkulator Seller TikTok
-            </h1>
+            </button>
           </div>
         </div>
       </div>

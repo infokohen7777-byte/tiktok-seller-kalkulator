@@ -65,4 +65,4 @@ export interface CalculationOutput {
   finalProfit: number;
 }
 
-export type ProductCalculation = CalculationInput & CalculationOutput;
+export type ProductCalculation = CalculationInput & CalculationOutput & { firestoreId?: string };

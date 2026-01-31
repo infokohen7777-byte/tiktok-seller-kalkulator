@@ -13,7 +13,11 @@ const ProductAccordion: React.FC<ProductAccordionProps> = ({ product, onDelete }
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete(product.id);
+    if (product.firestoreId) {
+      onDelete(product.firestoreId);
+    } else {
+      console.error("Cannot delete product without a firestoreId");
+    }
   };
 
   return (
@@ -29,6 +33,7 @@ const ProductAccordion: React.FC<ProductAccordionProps> = ({ product, onDelete }
             onClick={handleDelete}
             className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-full mr-2"
             aria-label="Hapus produk"
+            disabled={!product.firestoreId}
           >
             <Trash2 size={18} />
           </button>

@@ -1,33 +1,61 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { User } from 'firebase/auth';
+import { collection, query, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { Search, PackageOpen } from 'lucide-react';
 import { ProductCalculation } from '../types';
 import ProductAccordion from '../components/product/ProductAccordion';
 import Input from '../components/ui/Input';
 
-const ProductListPage: React.FC = () => {
+interface ProductListPageProps {
+  user: User;
+}
+
+const ProductListPage: React.FC<ProductListPageProps> = ({ user }) => {
   const [products, setProducts] = useState<ProductCalculation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const userEmail = sessionStorage.getItem('userEmail');
-    if (userEmail) {
-      const storageKey = `savedProducts_${userEmail}`;
-      const savedProducts = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      setProducts(savedProducts);
-    }
-  }, []);
+    if (!user) return;
 
-  const handleDelete = (id: string) => {
+    setLoading(true);
+    const userProductsCollection = collection(db, 'users', user.uid, 'products');
+    const q = query(userProductsCollection);
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const productsData: ProductCalculation[] = [];
+      querySnapshot.forEach((doc) => {
+        productsData.push({ ...doc.data() as ProductCalculation, firestoreId: doc.id });
+      });
+      setProducts(productsData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching products: ", error);
+      alert("Gagal memuat data produk.");
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const handleDelete = async (firestoreId: string) => {
+    if (!firestoreId) {
+      alert('Error: ID produk tidak valid.');
+      return;
+    }
     if (window.confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
-      const userEmail = sessionStorage.getItem('userEmail');
-      if (!userEmail) {
-        alert('Error: Pengguna tidak terautentikasi. Tidak dapat menghapus data.');
+      if (!user) {
+        alert('Error: Pengguna tidak terautentikasi.');
         return;
       }
-      const storageKey = `savedProducts_${userEmail}`;
-      const updatedProducts = products.filter(p => p.id !== id);
-      setProducts(updatedProducts);
-      localStorage.setItem(storageKey, JSON.stringify(updatedProducts));
+      try {
+        const productDocRef = doc(db, 'users', user.uid, 'products', firestoreId);
+        await deleteDoc(productDocRef);
+      } catch (error) {
+        console.error("Error deleting document: ", error);
+        alert("Gagal menghapus produk.");
+      }
     }
   };
   
@@ -36,6 +64,10 @@ const ProductListPage: React.FC = () => {
       product.namaProduk.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [products, searchTerm]);
+  
+  if (loading) {
+    return <div className="text-center p-10">Memuat data produk...</div>;
+  }
 
   return (
     <div>
@@ -53,7 +85,7 @@ const ProductListPage: React.FC = () => {
         {filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
             <ProductAccordion 
-              key={product.id}
+              key={product.firestoreId || product.id}
               product={product}
               onDelete={handleDelete}
             />

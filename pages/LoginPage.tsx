@@ -1,26 +1,58 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, KeyRound } from 'lucide-react';
-import { LOGIN_PASSWORD } from '../constants';
+import { auth } from '../firebase';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  FirebaseError
+} from 'firebase/auth';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 
-interface LoginPageProps {
-  onLogin: (email: string) => void;
-}
-
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+const LoginPage: React.FC = () => {
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleAuthError = (err: FirebaseError) => {
+    switch (err.code) {
+      case 'auth/invalid-email':
+        setError('Format email tidak valid.');
+        break;
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+        setError('Email atau password salah.');
+        break;
+      case 'auth/email-already-in-use':
+        setError('Email ini sudah terdaftar. Silakan login.');
+        break;
+      case 'auth/weak-password':
+        setError('Password harus terdiri dari minimal 6 karakter.');
+        break;
+      default:
+        setError('Terjadi kesalahan. Coba lagi nanti.');
+        break;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === LOGIN_PASSWORD) {
-      setError('');
-      onLogin(email);
-    } else {
-      setError('Password yang Anda masukkan salah. Coba lagi.');
+    setError('');
+    setLoading(true);
+    try {
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password);
+      }
+      // onAuthStateChanged di App.tsx akan menangani navigasi
+    } catch (err) {
+      handleAuthError(err as FirebaseError);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -30,7 +62,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <div className="text-center mb-8">
             <KeyRound className="mx-auto h-12 w-auto text-cyan-600" />
             <h1 className="text-3xl font-bold text-slate-800 mt-4">Kalkulator Seller TikTok</h1>
-            <p className="text-slate-600 mt-2">Silakan login untuk melanjutkan</p>
+            <p className="text-slate-600 mt-2">{isLogin ? 'Silakan login untuk melanjutkan' : 'Buat akun baru'}</p>
         </div>
         <div className="bg-white p-8 rounded-xl shadow-md">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -48,6 +80,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="anda@email.com"
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -65,7 +98,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="bms_seller"
+                  placeholder="Minimal 6 karakter"
+                  disabled={loading}
                 />
                 <button
                   type="button"
@@ -85,11 +119,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             {error && <p className="text-sm text-red-600">{error}</p>}
 
             <div>
-              <Button type="submit" className="w-full justify-center">
-                Login
+              <Button type="submit" className="w-full justify-center" disabled={loading}>
+                {loading ? 'Memproses...' : (isLogin ? 'Login' : 'Daftar')}
               </Button>
             </div>
           </form>
+          <p className="mt-6 text-center text-sm text-slate-600">
+            {isLogin ? 'Belum punya akun? ' : 'Sudah punya akun? '}
+            <button onClick={() => setIsLogin(!isLogin)} className="font-medium text-cyan-600 hover:text-cyan-500">
+              {isLogin ? 'Daftar di sini' : 'Login di sini'}
+            </button>
+          </p>
         </div>
       </div>
     </div>

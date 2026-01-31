@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { User } from 'firebase/auth';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { DollarSign, Percent, Target, Receipt, BarChart, FilePlus, BrainCircuit } from 'lucide-react';
 import { useRoasCalculator } from '../hooks/useRoasCalculator';
 import { MarginMode, ProductCalculation } from '../types';
@@ -12,9 +15,14 @@ import Toast from '../components/ui/Toast';
 import Input from '../components/ui/Input';
 import CappedInputRow from '../components/calculator/CappedInputRow';
 
-const CalculatorPage: React.FC = () => {
+interface CalculatorPageProps {
+  user: User;
+}
+
+const CalculatorPage: React.FC<CalculatorPageProps> = ({ user }) => {
   const { inputs, calculations, setInputValue, resetCalculator, fullProductData } = useRoasCalculator();
   const [showToast, setShowToast] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleNumericChange = (key: keyof typeof inputs, value: string) => {
     const numValue = value === '' || value === '-' ? 0 : parseFloat(value);
@@ -26,24 +34,28 @@ const CalculatorPage: React.FC = () => {
       setInputValue(key, isNaN(numValue) ? 999999999 : numValue);
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!inputs.namaProduk) {
       alert('Nama Produk harus diisi sebelum menyimpan.');
       return;
     }
-    const userEmail = sessionStorage.getItem('userEmail');
-    if (!userEmail) {
+    if (!user) {
       alert('Error: Pengguna tidak terautentikasi. Tidak dapat menyimpan data.');
       return;
     }
 
-    const storageKey = `savedProducts_${userEmail}`;
-    const savedProducts: ProductCalculation[] = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    const newProducts = [...savedProducts, fullProductData];
-    localStorage.setItem(storageKey, JSON.stringify(newProducts));
-    
-    setShowToast(true);
-    resetCalculator();
+    setIsSaving(true);
+    try {
+      const userProductsCollection = collection(db, 'users', user.uid, 'products');
+      await addDoc(userProductsCollection, fullProductData);
+      setShowToast(true);
+      resetCalculator();
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      alert("Gagal menyimpan data ke server.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getProfitColor = (value: number) => {
@@ -154,8 +166,8 @@ const CalculatorPage: React.FC = () => {
       </SectionCard>
 
       <div className="mt-8">
-        <Button onClick={handleSave} className="w-full text-lg py-3">
-          Simpan Perhitungan
+        <Button onClick={handleSave} className="w-full text-lg py-3" disabled={isSaving}>
+          {isSaving ? 'Menyimpan...' : 'Simpan Perhitungan'}
         </Button>
       </div>
       
